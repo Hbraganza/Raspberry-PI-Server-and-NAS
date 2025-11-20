@@ -253,6 +253,7 @@ Under `[global]`, ensure at minimum:
 [global]
 	workgroup = WORKGROUP
 	security = user
+	server smb encrypt = required
 ```
 
 At the bottom, add private user shares and a common group share. Example:
