@@ -22,6 +22,10 @@ import logging
 import smtplib
 from email.message import EmailMessage
 from typing import List, Tuple, Optional
+try:
+	import psutil  # For CPU utilization measurement
+except ImportError:
+	psutil = None
 
 from ultralytics import YOLO  # Requires 'ultralytics' package
 import cv2  # Requires 'opencv-python-headless'
@@ -38,6 +42,15 @@ MIN_CONFIDENCE: float = 0.35                # Detection confidence threshold
 LOG_PROGRESS_EVERY: int = 25                # Info log every N media files processed
 MAX_VIDEO_FRAMES: Optional[int] = None      # Cap frames processed per video (None = no cap)
 RETRY_MODEL_LOAD: int = 1                   # Retry count for model loading
+
+# ------------------ CPU Throttling Configuration ------------------
+# Target maximum overall CPU usage percentage (approximate). On a 4-core Pi,
+# 75 means try to remain at or below 3 cores worth of busy time.
+CPU_MAX_PERCENT: int = 75
+THROTTLE_CHECK_INTERVAL_FILES: int = 1   # Check after every N files
+THROTTLE_SLEEP_INCREMENT: float = 0.05   # Sleep added when over limit
+THROTTLE_MIN_SLEEP: float = 0.0          # Minimum baseline sleep per file
+THROTTLE_VIDEO_FRAME_SLEEP: float = 0.0  # Baseline sleep per sampled video frame
 
 # ------------------ Optional Email Alert Configuration ------------------
 # Configure these to enable failure emails. Leave EMAIL_RECIPIENTS empty to disable.
@@ -77,6 +90,27 @@ def setup_logging(debug: bool) -> None:
 		logger.addHandler(handler)
 	else:
 		logger.handlers[:] = [handler]
+
+# ------------------ Throttling ------------------
+def throttle_cpu(force: bool = False) -> None:
+	"""Sleep briefly if current CPU usage exceeds CPU_MAX_PERCENT.
+
+	When psutil is unavailable, fall back to a small fixed sleep to reduce
+	continuous tight looping. The 'force' flag allows unconditional sleep.
+	"""
+	if psutil is None:
+		if force:
+			time.sleep(THROTTLE_SLEEP_INCREMENT)
+		return
+	try:
+		# instantaneous sample; may fluctuate, but adequate for simple throttling
+		usage = psutil.cpu_percent(interval=0.0)
+		if usage >= CPU_MAX_PERCENT or force:
+			# Add small sleep to yield CPU
+			time.sleep(THROTTLE_SLEEP_INCREMENT)
+	except Exception:
+		# Fail-safe: do nothing if psutil misbehaves
+		pass
 
 # ------------------ Database ------------------
 def connect_db() -> sqlite3.Connection:
@@ -201,6 +235,8 @@ def detect_on_image(model: YOLO, path: str) -> List[Tuple[str, float, list]]:
 		conf = float(box.conf)
 		if cls_name in TARGET_CLASSES and conf >= MIN_CONFIDENCE:
 			out.append((cls_name, conf, box.xyxy[0].tolist()))
+	# Throttle after image inference
+	throttle_cpu()
 	logger.debug(f"Image {len(out)} detections: {path}")
 	return out
 
@@ -251,6 +287,8 @@ def detect_on_video(model: YOLO, path: str) -> List[Tuple[str, float, int, list]
 				os.remove(tmp_path)
 			except OSError:
 				pass
+			# Throttle after processing a sampled frame
+			throttle_cpu()
 		frame_index += 1
 	cap.release()
 	detections = list(best.values())
@@ -307,6 +345,9 @@ def scan(root: str, conn: sqlite3.Connection, model: YOLO) -> None:
 					err_msg = f"Detection failure {path}: {e}"
 					logger.error(err_msg)
 					DETECTION_ERRORS.append(err_msg)
+			# File-level throttle (every file or based on interval)
+			if media_count % THROTTLE_CHECK_INTERVAL_FILES == 0:
+				throttle_cpu()
 	logger.info(f"Scan complete. Media files seen: {media_count}")
 
 def diff_untracked(root: str, conn: sqlite3.Connection) -> List[str]:
