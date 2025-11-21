@@ -205,8 +205,15 @@ def detect_on_image(model: YOLO, path: str) -> List[Tuple[str, float, list]]:
 	return out
 
 def detect_on_video(model: YOLO, path: str) -> List[Tuple[str, float, int, list]]:
+	"""Detect only a single instance per target class in a video.
+
+	Scans sampled frames until each class in TARGET_CLASSES has at least one
+	detection (or video ends). Keeps the highest-confidence bbox per class.
+	Early-exits once all target classes have been found to avoid unnecessary
+	processing of long videos.
+	"""
 	cap = cv2.VideoCapture(path)
-	detections = []
+	best: dict[str, Tuple[str, float, int, list]] = {}
 	frame_index = 0
 	while True:
 		ok, frame = cap.read()
@@ -215,22 +222,39 @@ def detect_on_video(model: YOLO, path: str) -> List[Tuple[str, float, int, list]
 		if MAX_VIDEO_FRAMES is not None and frame_index >= MAX_VIDEO_FRAMES:
 			logger.debug("Reached max video frame cap")
 			break
+		# Sample frame
 		if frame_index % FRAME_SAMPLE_INTERVAL == 0:
 			tmp_path = f"/tmp/_frame_{os.getpid()}_{frame_index}.jpg"
 			cv2.imwrite(tmp_path, frame)
 			res = model(tmp_path, verbose=False)[0]
 			for box in res.boxes:
 				cls_name = model.names[int(box.cls)]
+				if cls_name not in TARGET_CLASSES:
+					continue
 				conf = float(box.conf)
-				if cls_name in TARGET_CLASSES and conf >= MIN_CONFIDENCE:
-					detections.append((cls_name, conf, frame_index, box.xyxy[0].tolist()))
+				if conf < MIN_CONFIDENCE:
+					continue
+				bbox = box.xyxy[0].tolist()
+				prev = best.get(cls_name)
+				# Replace only if new detection has higher confidence
+				if prev is None or conf > prev[1]:
+					best[cls_name] = (cls_name, conf, frame_index, bbox)
+			# Early exit if all target classes found
+			if len(best) == len(TARGET_CLASSES):
+				logger.debug("Early exit: all target classes detected in video")
+				try:
+					os.remove(tmp_path)
+				except OSError:
+					pass
+				break
 			try:
 				os.remove(tmp_path)
 			except OSError:
 				pass
 		frame_index += 1
 	cap.release()
-	logger.debug(f"Video {len(detections)} detections: {path}")
+	detections = list(best.values())
+	logger.debug(f"Video per-class detections {len(detections)}: {path}")
 	return detections
 
 def store_detections(conn: sqlite3.Connection, file_id: int, detections) -> None:
