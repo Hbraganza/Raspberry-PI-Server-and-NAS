@@ -21,7 +21,6 @@ import time
 import logging
 import smtplib
 from email.message import EmailMessage
-import psutil
 from typing import List, Tuple, Optional
 
 from ultralytics import YOLO  # Requires 'ultralytics' package
@@ -53,13 +52,6 @@ EMAIL_SENDER: str = "noreply@example.com"  # From address in emails
 # ------------------ Internal State ------------------
 LOG_BUFFER: list[str] = []       # Accumulates log lines for potential email
 DETECTION_ERRORS: list[str] = [] # Per-file detection failures
-
-# ------------------ CPU Throttle Configuration ------------------
-CPU_MAX_PERCENT: int = 75               # Target upper bound for process CPU usage
-CPU_SAMPLE_INTERVAL_SEC: float = 0.05   # Sampling interval for cpu_percent
-CPU_SLEEP_CAP_SEC: float = 1.0          # Max sleep duration per throttle event
-_PROC = psutil.Process()
-_CPU_WARMED = False
 
 logger = logging.getLogger("detection")
 
@@ -260,7 +252,6 @@ def detect_on_video(model: YOLO, path: str) -> List[Tuple[str, float, int, list]
 			except OSError:
 				pass
 		frame_index += 1
-		throttle_cpu()
 	cap.release()
 	detections = list(best.values())
 	logger.debug(f"Video per-class detections {len(detections)}: {path}")
@@ -316,23 +307,8 @@ def scan(root: str, conn: sqlite3.Connection, model: YOLO) -> None:
 					err_msg = f"Detection failure {path}: {e}"
 					logger.error(err_msg)
 					DETECTION_ERRORS.append(err_msg)
-			throttle_cpu()
 	logger.info(f"Scan complete. Media files seen: {media_count}")
-
-def throttle_cpu() -> None:
-	if CPU_MAX_PERCENT <= 0:
-		return
-	global _CPU_WARMED
-	usage = _PROC.cpu_percent(interval=CPU_SAMPLE_INTERVAL_SEC if _CPU_WARMED else 0.0)
-	if not _CPU_WARMED:
-		_CPU_WARMED = True
-		return
-	if usage > CPU_MAX_PERCENT:
-		excess = usage - CPU_MAX_PERCENT
-		sleep_time = min(CPU_SLEEP_CAP_SEC, excess / CPU_MAX_PERCENT)
-		logger.debug(f"Throttling CPU (usage={usage:.1f}%) sleeping {sleep_time:.2f}s")
-		time.sleep(sleep_time)
-
+    
 def reconcile_removed(root: str, conn: sqlite3.Connection) -> None:
 	logger.info("Reconciling removed files/directories")
 	fs_dirs: set[str] = set()
