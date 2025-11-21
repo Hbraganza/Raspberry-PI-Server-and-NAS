@@ -328,6 +328,55 @@ def summarize(conn: sqlite3.Connection) -> None:
 	for path, cnt in cur.fetchall():
 		print(f"{cnt}\t{path}")
 
+def prune_removed(root: str, conn: sqlite3.Connection) -> None:
+	"""Remove file and directory rows whose paths no longer exist on disk.
+
+	Only affects entries under the provided root path.
+	"""
+	removed_files = 0
+	# Delete missing files
+	for file_id, path in conn.execute(
+		"SELECT id, path FROM files WHERE path LIKE ?", (root.rstrip('/') + '/%',)
+	):
+		if not os.path.exists(path):
+			logger.debug(f"Prune: file missing on disk -> removing DB entry {path}")
+			conn.execute("DELETE FROM files WHERE id=?", (file_id,))
+			removed_files += 1
+	conn.commit()
+
+	# Iteratively remove orphan/missing directories (bottom-up)
+	removed_dirs = 0
+	while True:
+		deleted_this_pass = 0
+		for dir_id, dpath in conn.execute(
+			"SELECT id, path FROM directories WHERE path LIKE ? ORDER BY LENGTH(path) DESC",
+			(root.rstrip('/') + '/%',)
+		):
+			# Skip if directory still exists on disk
+			if os.path.exists(dpath):
+				continue
+			# Ensure no child directories remain referencing this
+			child_row = conn.execute(
+				"SELECT 1 FROM directories WHERE parent_id=? LIMIT 1", (dir_id,)
+			).fetchone()
+			if child_row:
+				continue
+			# Ensure no files remain referencing this directory
+			file_row = conn.execute(
+				"SELECT 1 FROM files WHERE directory_id=? LIMIT 1", (dir_id,)
+			).fetchone()
+			if file_row:
+				continue
+			logger.debug(f"Prune: directory missing on disk -> removing DB entry {dpath}")
+			conn.execute("DELETE FROM directories WHERE id=?", (dir_id,))
+			removed_dirs += 1
+			deleted_this_pass += 1
+		if deleted_this_pass == 0:
+			break
+	conn.commit()
+	if removed_files or removed_dirs:
+		logger.info(f"Pruning complete. Removed {removed_files} files and {removed_dirs} directories from DB.")
+
 def parse_args(argv: List[str]):
 	import argparse
 	p = argparse.ArgumentParser(description="Recursive YOLO people/dog detection (cron-friendly)")
@@ -384,7 +433,9 @@ def main(argv: List[str]) -> int:
 						print(p)
 				else:
 					print("No untracked media files.")
-			scan(ROOT_SCAN_PATH, conn, model)
+				scan(ROOT_SCAN_PATH, conn, model)
+				# Remove DB entries for files/dirs no longer present
+				prune_removed(ROOT_SCAN_PATH, conn)
 			if args.summary:
 				summarize(conn)
 		except Exception as e:
