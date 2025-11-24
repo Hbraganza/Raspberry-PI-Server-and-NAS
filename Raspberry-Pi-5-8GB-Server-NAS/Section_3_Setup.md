@@ -25,21 +25,25 @@ sudo curl -L https://install.pivpn.io | bash
 ```
 This will then ask you to setup a static IP as the IP has already been set select "Yes" if this is not done then select "No" and follow the instructions.
 
+---
 
 ### 2.2) Select a User
 
 It will now prompt you to select a user if you have more than one user you will have multiple options. For this set up "pi" user was used.
 
+---
 
 ### 2.3) VPN Selection
 
 It now asks you to select a VPN to use either WireGuard or OpenVPN. In this case select OpenVPN
 
+---
 
 ### 2.4) Default Settings
 
 It then provides a couple settings that it recommends as default. If they are not suitable select "No" and adjust accordingly. Otherwise select "Yes" which is recommended.
 
+---
 
 ### 2.5) Pick the Port
 
@@ -47,21 +51,25 @@ It then asks about which port to default connect to. The recommendation is the d
 
 Note: Remember the number used for later!!
 
+---
 
 ### 2.6) Select DNS Provider
 
 This gives you some options to select for DNS provider you'd like to use. As the Pi-hole is setup select custom.
 
+---
 
 ### 2.7) Provide the DynDNS or Domain
 
 Now input the DynDNS or Domain used to link to the routers IP.
 
+---
 
 ### 2.8) (Optional) Enable Unattended Upgrades
 
 The last prompt asks if you want to enable unattended upgrades this is highly recommended to keep upto date with the latest cyber security software.
 
+---
 
 ### 2.9) Reboot
 
@@ -75,7 +83,7 @@ Go to your router and portforward it to the Pi's IP using the portnumber that yo
 
 ---
 
-### 4) Create a VPN profile
+### 4.1) Create a VPN profile
 
 To use the VPN profiles need to be created to make the certificates which can be done by the following:
 
