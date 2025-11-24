@@ -62,7 +62,7 @@ These are the steps to setup the core functions of the server. The reamainder ar
 	- [x] Setup phone access
 	- [x] Setup phone photo syncing to users private space with ability to transfer to shared area
 	- [ ] Setup password manager
-	- [ ] Setup VPN
+	- [x] Setup VPN
 
 - [ ] Test non-local network access
 	- [ ] Test it is secure and get checked
