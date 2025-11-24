@@ -26,7 +26,14 @@ To follow/recreate the setup that is used, this repository has been broken down 
 - Step 2: Setup the Pi-Hole (network wide adblocker), follow Section 1 on the [Raspberry Pi 1](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-1-Pi-Hole/Section_1_Setup.md).
 - Step 3: Setup the NAS/Server, follow Section 1 on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_1_Setup.md).
 - Step 4: Setup the local backup, follow Section 1 on the [Raspberry Pi 2](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-2-Backup/Section_1_Setup.md). Then follow Section 2 on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_2_Setup.md).
+- Step 5: Setup the VPN server using open VPN on the [Raspberry Pi 5]()
 
+These are the steps to setup the core functions of the server. The reamainder are additional features that can be added for security and personal usecases.
+
+- Object detection algorithm for photos and videos and database classification
+- Photo frame image selector
+- Ransomeware detection system
+- Offsite backup
 ---
 
 ## To Do List
