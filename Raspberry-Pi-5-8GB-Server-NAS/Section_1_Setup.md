@@ -208,7 +208,7 @@ Add a line similar to this (replace UUID, uid/gid to match your admin user):
 ```
 
 Notes:
-- `umask=0007` gives rwx to owner and group, no access to others.
+- `umask=0007` gives rwx to owner and group, no access to others. If you are setting up ransomeware detection then put the value 0003 instead.
 - `uid/gid/umask` options apply to NTFS via ntfs-3g. For ext4, use Linux permissions instead (see note below).
 
 Test before rebooting:
