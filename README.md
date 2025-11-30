@@ -64,9 +64,9 @@ These are the steps to setup the core functions of the server. The reamainder ar
 	- [ ] Setup password manager
 	- [x] Setup VPN
 
-- [ ] Test non-local network access
-	- [ ] Test it is secure and get checked
-	- [ ] Setup domain
+- [x] Test non-local network access
+	- [x] Test it is secure and get checked
+	- [x] Setup domain
 
 - [ ] Attach screen to Pi 5 and build photo frame
 	- [ ] Attach screen to Pi 5
