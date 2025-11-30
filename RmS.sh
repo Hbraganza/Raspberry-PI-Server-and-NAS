@@ -9,6 +9,24 @@ SSH_KEY="ssh -i path/to/private/key" #ssh key
 
 unreachable=()
 
+run_ssh() {
+    local device="$1"; shift
+    local cmd="$*"
+    local attempt
+    for attempt in 1 2 3 4 5; do
+        if output=$($SSH_KEY "$device" bash -lc "$cmd" 2>&1); then
+            printf '%s\n' "$output"
+            return 0
+        else
+            echo "SSH attempt $attempt to $device failed" >&2
+            sleep 2
+        fi
+    done
+    echo "Device $device is unreachable after multiple attempts." >&2
+    return 1
+}
+
+
 checkfunction (){
     while read -r line; do #read each line of the .md5 file
     # collect the local checksum, filename and remote checksum
@@ -34,4 +52,12 @@ for i in "${!CHECKSUM_DEVICE[@]}"; do #loop through each device
     checkfunction "$CHECKSUM_SOURCE" "$SSHDEVICE"
 done
 
-echo "All files checked."
+if ((${#unreachable[@]})); then
+    echo "Unreachable devices:"
+    for d in "${unreachable[@]}"; do
+        echo " - $d"
+    done
+    echo "Files on reachable devices were checked."
+else
+    echo "All files checked and devices were reachable."
+fi
