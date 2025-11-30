@@ -72,7 +72,7 @@ These are the steps to setup the core functions of the server. The reamainder ar
 	- [ ] Attach screen to Pi 5
 	- [ ] Setup 6 am to 10 pm photo viewer
 	- [ ] Setup dashboard
-    - [ ] Setup object detection of Humans and animals for photo selection using YOLO or similar
+    - [x] Setup object detection of Humans and animals for photo selection using YOLO or similar
 
 - [ ] Powersaving setup
 	- [ ] Setup control of smart plugs for backup systems
