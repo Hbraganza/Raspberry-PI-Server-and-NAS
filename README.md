@@ -21,11 +21,11 @@ This is the repository showing the setup process and any scripts used to set up 
 
 To follow/recreate the setup that is used, this repository has been broken down so each directory represents what has been done on each device. In the folder is a setup.md file which explains the steps for setup on that device. The setup.md files are broken down into sections each section is the setup of one part for example set of the NAS or setup of the Backup. This README.MD will provide the overall setup order and links to each of the setup pages. The order is as follows:
 
-- Step 1: For all three Raspberry Pi's a [SSH public key](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/SSH-With-Public-Key-Setup/Setup.md) was setup
-- Step 2: Setup the Pi-Hole (network wide adblocker), follow Section 1 on the [Raspberry Pi 1](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-1-Pi-Hole/Section_1_Setup.md).
-- Step 3: Setup the NAS/Server, follow Section 1 on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_1_Setup.md).
-- Step 4: Setup the local backup, follow Section 1 on the [Raspberry Pi 3](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-2-Backup/Section_1_Setup.md). Then follow Section 2 on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_2_Setup.md).
-- Step 5: Setup the VPN server using open VPN on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_3_Setup.md)
+- Step 1: For all devices a [SSH public key](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/SSH-With-Public-Key-Setup/Setup.md) was setup
+- Step 2: Setup the Pi-Hole (network wide adblocker), follow Section 1 on the [DNS-Server](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-1-Pi-Hole/Section_1_Setup.md).
+- Step 3: Setup the NAS/Server, follow Section 1 on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_1_Setup.md).
+- Step 4: Setup the local backup, follow Section 1 on the [Local-Backup](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-2-Backup/Section_1_Setup.md). Then follow Section 2 on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_2_Setup.md).
+- Step 5: Setup the VPN server using open VPN on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_3_Setup.md)
 
 These are the steps to setup the core functions of the server. The reamainder are additional features that can be added for security and personal usecases.
 
