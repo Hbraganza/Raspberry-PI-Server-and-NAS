@@ -4,9 +4,8 @@ This is the repository showing the setup process and any scripts used to set up 
 ## Equipment List
 - Raspberry Pi 5 (8GB) - Acting as the Home server and NAS (plans to host touchscreen with dashboard and photo display)
 - Raspberry Pi 1 - Acting as the Pi-hole (plans to make it host a domain and VPN for security)
-- Raspberry Pi 2 - (plans to be the onsite backup)
+- Raspberry Pi 4 1GB x2 - (plans to be the onsite and offsite backup) 
 - My Personal computer - (Plans to remote in for gaming, virtualisation and developer work)
-- Zimablade - (plans to be the offsite backup)
 - 4TB NAS HDD - For the Server
 - 6TB HDD - (plans for offsite and local Backup)
 
@@ -25,7 +24,7 @@ To follow/recreate the setup that is used, this repository has been broken down 
 - Step 1: For all three Raspberry Pi's a [SSH public key](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/SSH-With-Public-Key-Setup/Setup.md) was setup
 - Step 2: Setup the Pi-Hole (network wide adblocker), follow Section 1 on the [Raspberry Pi 1](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-1-Pi-Hole/Section_1_Setup.md).
 - Step 3: Setup the NAS/Server, follow Section 1 on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_1_Setup.md).
-- Step 4: Setup the local backup, follow Section 1 on the [Raspberry Pi 2](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-2-Backup/Section_1_Setup.md). Then follow Section 2 on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_2_Setup.md).
+- Step 4: Setup the local backup, follow Section 1 on the [Raspberry Pi 3](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-Gen-2-Backup/Section_1_Setup.md). Then follow Section 2 on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_2_Setup.md).
 - Step 5: Setup the VPN server using open VPN on the [Raspberry Pi 5](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Raspberry-Pi-5-8GB-Server-NAS/Section_3_Setup.md)
 
 These are the steps to setup the core functions of the server. The reamainder are additional features that can be added for security and personal usecases.
@@ -54,9 +53,9 @@ These are the steps to setup the core functions of the server. The reamainder ar
 	- [x] Test file access
 
 - [ ] Build inclosures and tidy cables
-	- [ ] Build Pi 2 inclosure
+	- [x] Build Pi 2 inclosure
 	- [ ] Build router cable management system
-	- [ ] Build Pi 5 inclosure with photo frame
+	- [x] Build Pi 5 inclosure with photo frame
 
 - [ ] Setup file and photo additional file access methods and syncing
 	- [x] Setup phone access
