@@ -1,63 +1,97 @@
 #!/bin/bash
 set -euo pipefail
 
-SSHDEVICES=("IP_DEVICE1" "IP_DEVICE2") #Devices being SSH into
-CHECKSUM_DIR="/path/to/directory/" #Directory with the .md5 files
-CHECKSUM_DEVICE=("device1.md5" "device2.md5") #each .md5 file represents one device
+SSHDEVICES=("device_1_user@device_1_IP" "device_2_user@device_2_IP")
+CHECKSUM_DIR="/path/to/Checksum/directory"
+CHECKSUM_DEVICE=("device_1_checksum.md5" "device_2_checksum.md5")
+LOG_FILE="/path/to/error/log.txt"
 
-SSH_KEY="ssh -i path/to/private/key" #ssh key
+# Errors collected during the run; if empty, no log is written
+declare -a ERRORS
+# Ensure array is initialized to avoid unbound errors with set -u
+ERRORS=()
 
-unreachable=()
+SSH_KEY="ssh -i /path/to/your/private_key"
 
-run_ssh() {
-    local device="$1"; shift
+# Run an SSH command with retries (up to 5 attempts)
+ssh_with_retries() {
+    local host="$1"
+    shift
     local cmd="$*"
-    local attempt
-    for attempt in 1 2 3 4 5; do
-        if output=$($SSH_KEY "$device" bash -lc "$cmd" 2>&1); then
-            printf '%s\n' "$output"
+    local attempt=1
+    local max_attempts=5
+    local output=""
+    local status=0
+
+    while (( attempt <= max_attempts )); do
+        # -o BatchMode=yes prevents password prompts; keeps non-interactive
+        if output=$($SSH_KEY -o BatchMode=yes -n "$host" "$cmd" 2>/dev/null); then
+            echo "$output"
             return 0
         else
-            echo "SSH attempt $attempt to $device failed" >&2
-            sleep 2
+            status=$?
+            (( attempt++ ))
+            sleep 1
         fi
     done
-    echo "Device $device is unreachable after multiple attempts." >&2
-    return 1
+    return "$status"
 }
 
-
 checkfunction (){
-    while read -r line; do #read each line of the .md5 file
-    # collect the local checksum, filename and remote checksum
+    local checksum_file="$1"
+    local host="$2"
+
+    while read -r line; do
+        # Show the line for parity with existing output
+        echo "$line"
+        local checksum filename
         checksum=$(echo "$line" | awk '{print $1}')
         filename=$(echo "$line" | awk '{print $2}')
-        remote_checksum=$($SSH_KEY -n "$2" "md5sum $filename" | awk '{print $1}')
 
-        if [[ -z "$remote_checksum"]]; then
+        # First check if file exists on remote
+        if ! ssh_with_retries "$host" "test -f $filename"; then
+            echo "$filename: MISSING"
+            ERRORS+=("$host: $filename missing")
+            continue
+        fi
+
+        # Compute remote checksum with retries
+        local remote_checksum
+        if ! remote_checksum=$(ssh_with_retries "$host" "md5sum $filename" | awk '{print $1}'); then
             echo "$filename: ERROR"
-        elif [ "$checksum" != "$remote_checksum" ]; then #compare checksums if they fail state so
-           echo "$filename: FAILED" 
-        
+            ERRORS+=("$host: failed to compute checksum for $filename")
+            continue
+        fi
+
+        if [ "$checksum" != "$remote_checksum" ]; then
+            echo "$filename: FAILED"
+            ERRORS+=("$host: checksum mismatch for $filename")
         else
             echo "$filename: OK"
         fi
-    done <$1
+    done <"$checksum_file"
 }
 
-for i in "${!CHECKSUM_DEVICE[@]}"; do #loop through each device
+for i in "${!CHECKSUM_DEVICE[@]}"; do
     CHECKSUM_SOURCE="$CHECKSUM_DIR/${CHECKSUM_DEVICE[$i]}"
     SSHDEVICE="${SSHDEVICES[$i]}"
     echo "Checking files on $SSHDEVICE using $CHECKSUM_SOURCE"
+    # Quick connectivity check with retries; on failure, record and skip to next
+    if ! ssh_with_retries "$SSHDEVICE" "echo connected" >/dev/null; then
+        echo "Could not connect to $SSHDEVICE, skipping."
+        ERRORS+=("$SSHDEVICE: connection failed after retries")
+        continue
+    fi
+
     checkfunction "$CHECKSUM_SOURCE" "$SSHDEVICE"
 done
 
-if ((${#unreachable[@]})); then
-    echo "Unreachable devices:"
-    for d in "${unreachable[@]}"; do
-        echo " - $d"
+echo "All files checked."
+
+# Write error log only if there were errors
+if (( ${#ERRORS[@]} > 0 )); then
+    : > "$LOG_FILE"  # truncate/overwrite
+    for err in "${ERRORS[@]}"; do
+        echo "$err" >> "$LOG_FILE"
     done
-    echo "Files on reachable devices were checked."
-else
-    echo "All files checked and devices were reachable."
 fi
