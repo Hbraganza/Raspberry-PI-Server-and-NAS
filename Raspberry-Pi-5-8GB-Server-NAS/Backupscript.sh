@@ -1,12 +1,16 @@
 #!/bin/bash
 
 set -euo pipefail
+set -o errtrace
 
 SOURCE="/path/to/source/directory" #the location of the files that will be backedup
 DESTINATION="/path/to/backup/directory" #where to backup to on the backup device
+
 SSHKEY="ssh -i /path/to/private/key" #the ssh privatekey command to the backup device
 SSHDEVICE="user@device_IP_or_name" #the user you are going to ssh into
+
 DIRECTORIES=("user_1" "user_2" "etc") #due to size of server rsync needed to be broken down to the different user directories setup in the source
+
 SNAPSHOTNAME="Backup_$(date +%F_%H-%M-%S)" #snapshot name
 RETENTION_POLICY=56 #backups older than 56 days will be deleted
 
@@ -16,23 +20,80 @@ SNAP_LOC="${DESTINATION}/snapshots/${SNAPSHOTNAME}"
 LATESTLINK="${DESTINATION}/latest"
 link_opts=()
 
+LOGFILE="path/to/logs/backup_error.log"
+
+log_error() {
+  local exit_code=${1:-1}
+  local cmd=${2:-unknown}
+  local line_no=${3:-unknown}
+  local details=${4:-}
+  {
+    echo "[$(date -Is)] ERROR"
+    echo "Exit code: $exit_code"
+    echo "Failed command: $cmd"
+    echo "Line: $line_no"
+    echo "Hostname: $(hostname)"
+    echo "User: ${USER:-unknown}"
+    if [[ -n "$details" ]]; then
+      echo "--- Details ---"
+      printf "%s\n" "$details"
+    fi
+  } > "$LOGFILE"
+}
+
+trap 'ec=$?; log_error "$ec" "${BASH_COMMAND}" "${LINENO}"; exit "$ec"' ERR
+
 #function to perform the rsync in parralel for each user if there is a latest symbolic directory then it uses that location for hardlinking
 rsync_function(){
         for PERUSER in "${DIRECTORIES[@]}"; do
                 if $1; then
                         link_opts=("--link-dest=$LATESTLINK/$PERUSER")
                 fi
-                $SSHKEY "$SSHDEVICE" "mkdir -p '${SNAP_LOC}.partial/${PERUSER}'"
+                ssh_run "mkdir -p '${SNAP_LOC}.partial/${PERUSER}'"
                 echo "Created ${PERUSER} directory"
 
                 rsync -avz -e "$SSHKEY" --info=progress2,stats2 --delete "$SOURCE/$PERUSER/" "${link_opts[@]}" "$SSHDEVICE:$SNAP_LOC.partial/$PERUSER/" &
+                pids+=("$!")
                 echo "Started rsync for ${PERUSER}"
         done
-        wait
+
+        for pid in "${pids[@]}"; do
+                wait "$pid"
+        done
 }
 
+ssh_run() {
+  local remote_cmd="$1"
+  local attempts=3
+  local delay=2
+  local status=0
+  local last_err=""
+  local errfile=""
 
-if $SSHKEY "$SSHDEVICE" "test -e '$LATESTLINK'"; then
+  for ((i=1; i<=attempts; i++)); do
+    errfile=$(mktemp)
+    if $SSHKEY -n "$SSHDEVICE" "$remote_cmd" 2> "$errfile"; then
+      rm -f "$errfile"
+      return 0
+    fi
+    status=$?
+    last_err="$(cat "$errfile")"
+    rm -f "$errfile"
+    echo "SSH attempt $i/$attempts failed for: $remote_cmd"
+    if (( i < attempts )); then
+      sleep "$delay"
+    fi
+  done
+
+  log_error "$status" "ssh $SSHDEVICE -- $remote_cmd" "${LINENO}" "SSH stderr: $last_err"
+
+  echo "SSH failed after $attempts attempts. Aborting."
+  # Ensure any background jobs (like rsync) are terminated.
+  kill 0
+  exit 1
+}
+
+if ssh_run "test -e '$LATESTLINK'"; then
         echo "Detected latest directory at ${LATESTLINK}"
         rsync_function true
 else
@@ -43,11 +104,11 @@ fi
 DURATION=$SECONDS
 echo "Rsync success time taken $((DURATION / 3600)):$(((DURATION % 3600)/60)):$((DURATION % 60)). Now finishing snapshot and symbolic link to latest directory"
 
-$SSHKEY "$SSHDEVICE" "mkdir -p '${SNAP_LOC}' && mv ${SNAP_LOC}.partial/* ${SNAP_LOC}/ && ln -sfn ${SNAP_LOC} ${LATESTLINK}"
+ssh_run "mkdir -p '${SNAP_LOC}' && mv ${SNAP_LOC}.partial/* ${SNAP_LOC}/ && ln -sfn ${SNAP_LOC} ${LATESTLINK} && chmod 775 '${LATESTLINK}'"
 echo "Succesful Creation of snapshot folder and linking to latest directory. Now performing removal of .partial directories"
 
-$SSHKEY "$SSHDEVICE" "find '${DESTINNATION}/snapshots/' -type d -name '*.partial' -exec rm -r {} +"
+ssh_run "find '${DESTINATION}/snapshots/' -type d -name '*.partial' -exec rm -r {} +"
 echo "Succesful Removal of .partial directories. Now applying retention policy of $RETENTION_POLICY days"
 
-$SSHKEY "$SSHDEVICE" "find '${DESTINATION}/snapshots/' -mindepth 1 -maxdepth 1 -type d -mtime +$RETENTION_POLICY -exec rm -rf {} +"
+ssh_run "find '${DESTINATION}/snapshots/' -mindepth 1 -maxdepth 1 -type d -mtime +$RETENTION_POLICY -exec rm -rf {} +"
 echo "Retention policy applied backup completed"
