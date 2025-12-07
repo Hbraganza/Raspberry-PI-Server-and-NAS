@@ -65,7 +65,7 @@ checkfunction (){
 
         if [ "$checksum" != "$remote_checksum" ]; then
             echo "$filename: FAILED"
-            ERRORS+=("$host: checksum mismatch for $filename")
+            ERRORS+=("$host: checksum mismatch for $filename file tampered with or corrupted check device")
         else
             echo "$filename: OK"
         fi
@@ -91,6 +91,7 @@ echo "All files checked."
 # Write error log only if there were errors
 if (( ${#ERRORS[@]} > 0 )); then
     : > "$LOG_FILE"  # truncate/overwrite
+    echo "Last error timestamp: $(date +'%Y-%m-%d %H:%M:%S')" >> "$LOG_FILE"
     for err in "${ERRORS[@]}"; do
         echo "$err" >> "$LOG_FILE"
     done
