@@ -17,6 +17,10 @@ SCOPES = 'https://www.googleapis.com/auth/gmail.send'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Gmail API Python Send Email'
 
+# Configure sender and recipients here
+SENDER = 'sending@email.com'
+RECIPIENTS = ['reciepient1@email.com','reciepient2@email.com']  # Add more emails as needed
+
 def get_credentials():
     home_dir = os.path.expanduser('~')
     credential_dir = os.path.join(home_dir, '.credentials')
@@ -65,8 +69,6 @@ def CreateMessageText(sender, recipients, subject, body):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Send Gmail text email to multiple recipients')
-    parser.add_argument('--sender', required=True, help='Sender Gmail address')
-    parser.add_argument('--to', required=True, nargs='+', help='One or more recipient email addresses')
     parser.add_argument('--subject', required=True, help='Email subject')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--body', help='Email body text')
@@ -83,7 +85,7 @@ def main():
     else:
         body = args.body
 
-    SendMessage(args.sender, args.to, args.subject, body)
+    SendMessage(SENDER, RECIPIENTS, args.subject, body)
 
 if __name__ == '__main__':
     main()
