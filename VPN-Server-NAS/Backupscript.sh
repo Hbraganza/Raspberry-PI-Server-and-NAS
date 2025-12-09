@@ -21,6 +21,16 @@ LATESTLINK="${DESTINATION}/latest"
 link_opts=()
 
 LOGFILE="path/to/logs/backup_error.log"
+EMAIL_SENDER="/path/to/Email_Sender.py"
+PYTHON_ENV="/path/to/gmailenv/bin/python3"
+
+check_remote_health() {
+  local timeout=10
+  if timeout "$timeout" $SSHKEY -o ConnectTimeout=5 -n "$SSHDEVICE" "test -d '$DESTINATION' && touch '$DESTINATION/.health_check' && rm '$DESTINATION/.health_check'" 2>/dev/null; then
+    return 0
+  fi
+  return 1
+}
 
 log_error() {
   local exit_code=${1:-1}
@@ -39,27 +49,86 @@ log_error() {
       printf "%s\n" "$details"
     fi
   } > "$LOGFILE"
+  # Send error email
+  "$PYTHON_ENV" "$EMAIL_SENDER" \
+    --subject "Backup Error on $(hostname)" \
+    --body-file "$LOGFILE" 2>/dev/null || echo "Failed to send error email"
+
 }
 
 trap 'ec=$?; log_error "$ec" "${BASH_COMMAND}" "${LINENO}"; exit "$ec"' ERR
 
 #function to perform the rsync in parralel for each user if there is a latest symbolic directory then it uses that location for hardlinking
 rsync_function(){
-        for PERUSER in "${DIRECTORIES[@]}"; do
-                if $1; then
-                        link_opts=("--link-dest=$LATESTLINK/$PERUSER")
-                fi
-                ssh_run "mkdir -p '${SNAP_LOC}.partial/${PERUSER}'"
-                echo "Created ${PERUSER} directory"
+  declare -a pids=()
+  for PERUSER in "${DIRECTORIES[@]}"; do
+    if $1; then
+      link_opts=("--link-dest=$LATESTLINK/$PERUSER")
+    fi
+    ssh_run "mkdir -p '${SNAP_LOC}.partial/${PERUSER}'"
+    echo "Created ${PERUSER} directory"
 
-                rsync -avz -e "$SSHKEY" --info=progress2,stats2 --delete "$SOURCE/$PERUSER/" "${link_opts[@]}" "$SSHDEVICE:$SNAP_LOC.partial/$PERUSER/" &
-                pids+=("$!")
-                echo "Started rsync for ${PERUSER}"
-        done
+    rsync -avz -e "$SSHKEY" --info=progress2,stats2 --delete "$SOURCE/$PERUSER/" "${link_opts[@]}" "$SSHDEVICE:$SNAP_LOC.partial/$PERUSER/" &
+    pids+=("$!")
+    echo "Started rsync for ${PERUSER}"
+  done
 
+# Monitor background jobs with periodic health checks
+  local check_interval=60  # Check every 60 seconds
+  local last_check=$SECONDS
+        
+  while true; do
+    local all_done=true
+                
+    # Check if any rsync jobs are still running
+    for pid in "${pids[@]}"; do
+      if kill -0 "$pid" 2>/dev/null; then
+        all_done=false
+        break
+      fi
+    done
+          
+    # If all done, exit monitoring loop
+    if $all_done; then
+      break
+    fi
+    
+    # Periodic health check (every 60 seconds)
+    local elapsed=$((SECONDS - last_check))
+    if (( elapsed >= check_interval )); then
+      echo "Performing periodic health check..."
+      if ! check_remote_health; then
+        echo "Remote health check failed! Killing rsync jobs..."
         for pid in "${pids[@]}"; do
-                wait "$pid"
+                kill -TERM "$pid" 2>/dev/null || true
         done
+        sleep 2
+        # Force kill any stragglers
+        for pid in "${pids[@]}"; do
+                kill -KILL "$pid" 2>/dev/null || true
+        done
+        log_error 1 "rsync health check" "${LINENO}" "Remote filesystem became unavailable during backup"
+        exit 1
+      fi
+      echo "Health check passed"
+      last_check=$SECONDS
+    fi
+    
+    sleep 5  # Check job status every 5 seconds
+  done
+  
+  # Collect exit codes from all rsync jobs
+  local failed=0
+  for pid in "${pids[@]}"; do
+          if ! wait "$pid"; then
+                  failed=1
+          fi
+  done
+  
+  if (( failed )); then
+          log_error 1 "rsync" "${LINENO}" "One or more rsync jobs failed"
+          exit 1
+  fi
 }
 
 ssh_run() {
@@ -93,12 +162,18 @@ ssh_run() {
   exit 1
 }
 
+echo "Performing initial health check..."
+if ! check_remote_health; then
+  log_error 1 "pre-flight health check" "${LINENO}" "Remote filesystem not accessible before backup start"
+  exit 1
+fi
+
 if ssh_run "test -e '$LATESTLINK'"; then
-        echo "Detected latest directory at ${LATESTLINK}"
-        rsync_function true
+  echo "Detected latest directory at ${LATESTLINK}"
+  rsync_function true
 else
-        echo "No latest directory detected"
-        rsync_function false
+  echo "No latest directory detected"
+  rsync_function false
 fi
 
 DURATION=$SECONDS
