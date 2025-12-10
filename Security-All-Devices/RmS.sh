@@ -5,6 +5,8 @@ SSHDEVICES=("device_1_user@device_1_IP" "device_2_user@device_2_IP")
 CHECKSUM_DIR="/path/to/Checksum/directory"
 CHECKSUM_DEVICE=("device_1_checksum.md5" "device_2_checksum.md5")
 LOG_FILE="/path/to/error/log.txt"
+EMAIL_SENDER="/path/to/Email_Sender.py"
+PYTHON_ENV="/path/to/gmailenv/bin/python3"
 
 # Errors collected during the run; if empty, no log is written
 declare -a ERRORS
@@ -88,11 +90,18 @@ done
 
 echo "All files checked."
 
-# Write error log only if there were errors
+# Write error log and send email if there were errors
 if (( ${#ERRORS[@]} > 0 )); then
     : > "$LOG_FILE"  # truncate/overwrite
     echo "Last error timestamp: $(date +'%Y-%m-%d %H:%M:%S')" >> "$LOG_FILE"
     for err in "${ERRORS[@]}"; do
         echo "$err" >> "$LOG_FILE"
     done
+    
+    # Send error email
+    if [[ -f "$EMAIL_SENDER" ]] && [[ -x "$PYTHON_ENV" ]]; then
+        "$PYTHON_ENV" "$EMAIL_SENDER" \
+            --subject "RmS Checksum Errors on $(hostname)" \
+            --body-file "$LOG_FILE" 2>/dev/null || echo "Failed to send error email"
+    fi
 fi
