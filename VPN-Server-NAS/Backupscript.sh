@@ -8,6 +8,7 @@ DESTINATION="/path/to/backup/directory" #where to backup to on the backup device
 
 SSHKEY="ssh -i /path/to/private/key" #the ssh privatekey command to the backup device
 SSHDEVICE="user@device_IP_or_name" #the user you are going to ssh into
+SSH_KEEPALIVE_OPTS="-o ServerAliveInterval=60 -o ServerAliveCountMax=5 -o TCPKeepAlive=yes"
 
 DIRECTORIES=("user_1" "user_2" "etc") #due to size of server rsync needed to be broken down to the different user directories setup in the source
 
@@ -25,10 +26,22 @@ EMAIL_SENDER="/path/to/Email_Sender.py"
 PYTHON_ENV="/path/to/gmailenv/bin/python3"
 
 check_remote_health() {
+  local attempts=${1:-3}
   local timeout=10
-  if timeout "$timeout" $SSHKEY -o ConnectTimeout=5 -n "$SSHDEVICE" "test -d '$DESTINATION' && touch '$DESTINATION/.health_check' && rm '$DESTINATION/.health_check'" 2>/dev/null; then
-    return 0
-  fi
+  local delay=10
+  local i
+  for ((i=1; i<=attempts; i++)); do
+    if timeout "$timeout" $SSHKEY $SSH_KEEPALIVE_OPTS -o ConnectTimeout=5 -n "$SSHDEVICE" "\
+        test -d '$DESTINATION' && \
+        touch '$DESTINATION/.health_check' && \
+        rm '$DESTINATION/.health_check'" 2>/dev/null; then
+      return 0
+    fi
+    echo "Health check attempt $i/$attempts failed; backing off..."
+    if (( i < attempts )); then
+      sleep "$delay"
+    fi
+  done
   return 1
 }
 
@@ -61,6 +74,31 @@ trap 'ec=$?; log_error "$ec" "${BASH_COMMAND}" "${LINENO}"; exit "$ec"' ERR
 #function to perform the rsync in parralel for each user if there is a latest symbolic directory then it uses that location for hardlinking
 rsync_function(){
   declare -a pids=()
+  # Common rsync and ssh options to improve resiliency under memory pressure
+  local RSYNC_OPTS=("-avz" "--partial" "--append-verify" "--info=progress2,stats2" "--delete" "--timeout=120")
+  local SSH_CMD="ssh -i /path/to/private/key $SSH_KEEPALIVE_OPTS"
+
+  rsync_with_retries() {
+    local peruser="$1"; shift
+    local -a link_args=("$@")
+    local attempts=3
+    local delay=15
+    local try
+    for ((try=1; try<=attempts; try++)); do
+      rsync "${RSYNC_OPTS[@]}" -e "$SSH_CMD" "$SOURCE/$peruser/" "${link_args[@]}" "$SSHDEVICE:$SNAP_LOC.partial/$peruser/" && return 0
+      ec=$?
+      echo "rsync for $peruser failed (exit $ec) on attempt $try/$attempts"
+      # If interrupted by signal (20) or transient failure, wait and retry
+      if (( try < attempts )); then
+        # Re-check remote health before retrying
+        if ! check_remote_health 3; then
+          echo "Remote health check failed during rsync retry for $peruser; will retry after backoff"
+        fi
+        sleep "$delay"
+      fi
+    done
+    return 1
+  }
   for PERUSER in "${DIRECTORIES[@]}"; do
     if $1; then
       link_opts=("--link-dest=$LATESTLINK/$PERUSER")
@@ -68,7 +106,7 @@ rsync_function(){
     ssh_run "mkdir -p '${SNAP_LOC}.partial/${PERUSER}'"
     echo "Created ${PERUSER} directory"
 
-    rsync -avz -e "$SSHKEY" --info=progress2,stats2 --delete "$SOURCE/$PERUSER/" "${link_opts[@]}" "$SSHDEVICE:$SNAP_LOC.partial/$PERUSER/" &
+    rsync_with_retries "$PERUSER" "${link_opts[@]}" &
     pids+=("$!")
     echo "Started rsync for ${PERUSER}"
   done
@@ -97,7 +135,7 @@ rsync_function(){
     local elapsed=$((SECONDS - last_check))
     if (( elapsed >= check_interval )); then
       echo "Performing periodic health check..."
-      if ! check_remote_health; then
+            if ! check_remote_health 3; then
         echo "Remote health check failed! Killing rsync jobs..."
         for pid in "${pids[@]}"; do
                 kill -TERM "$pid" 2>/dev/null || true
