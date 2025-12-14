@@ -3,17 +3,19 @@ This is the repository showing the setup process and any scripts used to set up 
 
 ## Equipment List
 - Raspberry Pi 5 (8GB) - Acting as the Home server and NAS (plans to host touchscreen with dashboard and photo display)
-- Raspberry Pi 1 - Acting as the Pi-hole (plans to make it host a domain and VPN for security)
-- Raspberry Pi 4 1GB x2 - (plans to be the onsite and offsite backup) 
-- My Personal computer - (Plans to remote in for gaming, virtualisation and developer work)
+- Raspberry Pi 1 - The Pi-hole
+- Raspberry Pi 4 1GB x2 - The onsite and offsite backup
+- My Personal computer - To help setup the system can be a windows or linux system
 - 4TB NAS HDD - For the Server
-- 6TB HDD - (plans for offsite and local Backup)
+- 6TB HDD - For offsite and local Backup
 
 ## Software for setup currently
 - Samba protocol (NAS)
 - SSH public key protocol
 - Pi-Hole Network wide Adblocker
 - rsync for backup over local network
+- OpenVPN
+- Gmail Email Alert System
 
 ---
 
