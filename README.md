@@ -42,14 +42,13 @@ These are the steps to setup the core functions of the server. The reamainder ar
 	- [x] Setup private user sections and shared photo section with admin access to all files
 	- [x] Setup Pi 2 to perform smooth easy recovery
 	- [ ] Automate weekly backup with Wake-up Over LAN on Pi 2
-	- [ ] Setup HDD health monitor with 3 months history saved on the Pi 2 and Pi 5
-	- [ ] Setup automated health alert by email
+	- [x] Setup automated health alert by email
 
 - [ ] Test recovery system and iteration system
 	- [x] Revert one file
 	- [x] Revert full disk
 	- [ ] Full recovery of old data on disk using backup
-	- [ ] Test email alert and HDD health monitoring
+	- [x] Test email alert and HDD health monitoring
 	- [x] Test file access
 
 - [ ] Build inclosures and tidy cables
@@ -68,8 +67,8 @@ These are the steps to setup the core functions of the server. The reamainder ar
 	- [x] Setup domain
 
 - [ ] Attach screen to Pi 5 and build photo frame
-	- [ ] Attach screen to Pi 5
-	- [ ] Setup 6 am to 10 pm photo viewer
+	- [x] Attach screen to Pi 5
+	- [x] Setup 6 am to 10 pm photo viewer
 	- [ ] Setup dashboard
     - [x] Setup object detection of Humans and animals for photo selection using YOLO or similar
 
@@ -77,6 +76,6 @@ These are the steps to setup the core functions of the server. The reamainder ar
 	- [ ] Setup control of smart plugs for backup systems
 	- [ ] Setup idle system for NAS HDD
 
-- [ ] Setup a ransomware detection system
+- [x] Setup a ransomware detection system
 
-- [ ] Test full system and ensure Pi 1 works when Pi 5 fails and visa versa also check send checks if each other are running
+- [x] Test full system and ensure Pi 1 works when Pi 5 fails and visa versa also check send checks if each other are running
