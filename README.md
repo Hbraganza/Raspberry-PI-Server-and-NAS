@@ -24,14 +24,15 @@ To follow/recreate the setup that is used, this repository has been broken down 
 - Step 1: For all devices a [SSH public key](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/SSH-With-Public-Key-Setup/Setup.md) was setup
 - Step 2: Setup the Pi-Hole (network wide adblocker), follow Section 1 on the [DNS-Server](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/DNS-Server/Section_1_Setup.md).
 - Step 3: Setup the NAS/Server, follow Section 1 on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/VPN-Server-NAS/Section_1_Setup.md).
-- Step 4: Setup the local backup, follow Section 1 on the [Local-Backup](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Local-Backup/Section_1_Setup.md). Then follow Section 2 on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/VPN-Server-NAS/Section_2_Setup.md).
-- Step 5: Setup the VPN server using open VPN by following section 3 on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/VPN-Server-NAS/Section_3_Setup.md).
+- Step 4: Setup the email_sender if there is a an issue with the backup process or ransomware system, follow this [email-setup](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Security-All-Devices/Gmail_Setup.md) for all devices. 
+- Step 5: Setup the local backup, follow Section 1 on the [Local-Backup](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/Local-Backup/Section_1_Setup.md). Then follow Section 2 on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/VPN-Server-NAS/Section_2_Setup.md).
+- Step 6: Setup the VPN server using open VPN by following section 3 on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/VPN-Server-NAS/Section_3_Setup.md).
+- Step 7: Setup the ransomware detection system
 
 These are the steps to setup the core functions of the server. The reamainder are additional features that can be added for security and personal usecases.
 
 - Object detection algorithm for photos and videos and database classification
 - Photo frame image selector
-- Ransomeware detection system
 - Offsite backup
 ---
 
