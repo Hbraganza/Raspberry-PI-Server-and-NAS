@@ -1,11 +1,4 @@
 #!/usr/bin/env bash
-# Full-screen photo/video rotator for Raspberry Pi touchscreen.
-# - Pulls random media from Detectionalgorithm.py SQLite DB.
-# - Single shuffled playlist for day; loops; user swipes to navigate.
-# - Screen power schedule: select 05:30, start 06:00, stop 23:00 (configurable).
-# - Gestures via evdev: swipe left/right next/prev, swipe down exit to desktop,
-#   swipe up show path + optional delete with confirmation.
-# - Auto-advance every minute. Night idle wake-to-desktop if touched.
 
 set -euo pipefail
 
