@@ -31,7 +31,7 @@ To follow/recreate the setup that is used, this repository has been broken down 
 - Step 6: Setup the VPN server using open VPN by following section 3 on the [VPN-Server-NAS](https://github.com/Hbraganza/Raspberry-PI-Server-and-NAS/blob/main/VPN-Server-NAS/Section_3_Setup.md).
 - Step 7: Setup the ransomware detection system
 
-These are the steps to setup the core functions of the server. The reamainder are additional features that can be added for security and personal usecases.
+These are the steps to setup the core functions of the server. The remainder are additional features that can be added for security and personal usecases.
 
 - Object detection algorithm for photos and videos and database classification
 - Photo frame image selector
