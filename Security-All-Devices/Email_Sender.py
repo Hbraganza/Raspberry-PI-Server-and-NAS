@@ -68,12 +68,14 @@ def CreateMessageText(sender, recipients, subject, body):
 
 def main():
     import argparse
+    import sys
     parser = argparse.ArgumentParser(description='Send Gmail text email to multiple recipients')
     parser.add_argument('--subject', required=True, help='Email subject')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--body', help='Email body text')
     group.add_argument('--body-file', help='Path to a file whose contents become the email body')
-    args = parser.parse_args()
+    args, remaining = parser.parse_known_args()
+    sys.argv = [sys.argv[0]] + remaining
 
     if args.body_file:
         try:
